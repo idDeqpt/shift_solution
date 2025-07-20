@@ -14,34 +14,12 @@ import java.nio.file.Paths;
 
 class Main {
 	public static void main(String args[]) {
-		Object[][] paramsShifts = {
-			{"-s", 1},
-			{"-f", 1},
-			{"-a", 1},
-			{"-o", 2},
-			{"-p", 2}
-		};
-
-		int firstFileIndex = 0;
-		ValuesStatistics.Type statisticsType = null;
-		String outFilePath = "";
-		String outFilePrefix = "";
-		boolean appendData = false;
-
-		for (int i = 0; i < args.length; i++) {
-			for (int j = 0; j < paramsShifts.length; j++)
-				if (args[i].equals(paramsShifts[j][0])) firstFileIndex += (int)paramsShifts[j][1];
-
-			if (args[i].equals("-s"))
-				statisticsType = ValuesStatistics.Type.SHORT;
-			else if (args[i].equals("-f"))
-				statisticsType = ValuesStatistics.Type.FULL;
-			else if (args[i].equals("-a"))
-				appendData = true;
-			else if (args[i].equals("-o"))
-				outFilePath = args[i + 1] + "/";
-			else if (args[i].equals("-p"))
-				outFilePrefix = args[i + 1];
+		OptionManager optionManager = new OptionManager();
+		try {
+			optionManager.initParams(args);
+		} catch (Exception ex) {
+			System.out.println(ex.getMessage());
+			return;
 		}
 
 		String[] targetTypes = {
@@ -54,9 +32,9 @@ class Main {
 		valuesArrays.add(new ArrayList<CombinedValue>(0)); //for floats
 		valuesArrays.add(new ArrayList<CombinedValue>(0)); //for strings
 
-		String[] filePaths = Arrays.copyOfRange(args, firstFileIndex, args.length);
-		if (filePaths.length == 0) {
-			System.out.println("No files are selected");
+		ArrayList<String> filePaths = optionManager.getSourceFiles();
+		if (filePaths.size() == 0) {
+			System.out.println("Not entered source files");
 			return;
 		}
 
@@ -83,16 +61,16 @@ class Main {
 		for (int i = 0; i < valuesArrays.size(); i++) {
 			ArrayList<CombinedValue> valuesArray = valuesArrays.get(i);
 			if (valuesArray.size() > 0) {
-				String currentFilename = outFilePath + outFilePrefix + targetTypes[i] + "s.txt";
+				String currentFilename = optionManager.getOutFilePath() + optionManager.getOutFilePrefix() + targetTypes[i] + "s.txt";
 				try {
 					Path outFile = Paths.get(currentFilename);
 					if (!Files.exists(outFile)) {
-						if (!Files.exists(Paths.get(outFilePath)))
-							Files.createDirectory(Paths.get(outFilePath));
+						if (!Files.exists(Paths.get(optionManager.getOutFilePath())))
+							Files.createDirectory(Paths.get(optionManager.getOutFilePath()));
 						outFile = Files.createFile(Paths.get(currentFilename));
 					}
 
-					FileWriter writer = new FileWriter(outFile.toString(), appendData);
+					FileWriter writer = new FileWriter(outFile.toString(), optionManager.isAppend());
 					for (CombinedValue value : valuesArray)
 						writer.write(value.getString() + "\n");
 					writer.flush(); writer.close();
@@ -101,11 +79,11 @@ class Main {
 					System.out.println("Error: error of write data to file " + currentFilename);
 				}
 
-				if (statisticsType != null) {
-					ValuesStatistics statistics = new ValuesStatistics(valuesArray, statisticsType);
+				if (optionManager.getStatisticsType() != null) {
+					ValuesStatistics statistics = new ValuesStatistics(valuesArray, optionManager.getStatisticsType());
 					System.out.println("Statistics of " + targetTypes[i] + " values:");
 					System.out.println("\tCount of values: " + statistics.getCount());
-					if (statisticsType == ValuesStatistics.Type.FULL) {
+					if (optionManager.getStatisticsType() == ValuesStatistics.Type.FULL) {
 						System.out.println("\tMin value: " + statistics.getMin());
 						System.out.println("\tMax value: " + statistics.getMax());
 						System.out.println("\tAverage value: " + statistics.getAverage());
