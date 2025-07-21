@@ -22,30 +22,31 @@ class Main {
 			return;
 		}
 
-		String[] targetTypes = {
-			"integer",
-			"float",
-			"string"
-		};
-		ArrayList<ArrayList<CombinedValue>> valuesArrays = new ArrayList<ArrayList<CombinedValue>>(0);
-		valuesArrays.add(new ArrayList<CombinedValue>(0)); //for ints
-		valuesArrays.add(new ArrayList<CombinedValue>(0)); //for floats
-		valuesArrays.add(new ArrayList<CombinedValue>(0)); //for strings
-
 		ArrayList<String> filePaths = optionManager.getSourceFiles();
 		if (filePaths.size() == 0) {
 			System.out.println("Not entered source files");
 			return;
 		}
 
+		String[][] targetTypes = {
+			{"integer", "^[+-]?\\d+$"},
+			{"float",   "^[+-]?\\d+\\.\\d+([eE][+-]?\\d+)?$"},
+			{"string",  "^(?!^[+-]?\\d+$)(?!^[+-]?\\d+\\.\\d+([eE][+-]?\\d+)?$)(?!\\n).*$"}
+		};
+		ArrayList<ValuesGroup> valuesGroups = new ArrayList<ValuesGroup>(0);
+		for (String[] target : targetTypes)
+			valuesGroups.add(new ValuesGroup(target[1]));
+
+		Parser parser = new Parser();
+		for (String[] target : targetTypes)
+			parser.addGroupFilter(target[1]);
+
 		for (String path : filePaths) {
 			try {
-				Parser parser = new Parser(path);
-				parser.parse();
-
-				valuesArrays.get(0).addAll(parser.getInts());
-				valuesArrays.get(1).addAll(parser.getFloats());
-				valuesArrays.get(2).addAll(parser.getStrings());
+				parser.parse(path);
+				ArrayList<ValuesGroup> fileGroups = parser.getResultGroups();
+				for (int i = 0; i < valuesGroups.size(); i++)
+					valuesGroups.get(i).addAll(fileGroups.get(i).getValues());
 			}
 			catch (FileNotFoundException e) {
 				System.out.println("Error: file " + path + " not found");
@@ -55,13 +56,10 @@ class Main {
 			}
 		}
 
-		if (valuesArrays.size() == 0)
-			System.out.println("Not found data for processing");
-
-		for (int i = 0; i < valuesArrays.size(); i++) {
-			ArrayList<CombinedValue> valuesArray = valuesArrays.get(i);
+		for (int i = 0; i < valuesGroups.size(); i++) {
+			ArrayList<CombinedValue> valuesArray = valuesGroups.get(i).getValues();
 			if (valuesArray.size() > 0) {
-				String currentFilename = optionManager.getOutFilePath() + optionManager.getOutFilePrefix() + targetTypes[i] + "s.txt";
+				String currentFilename = optionManager.getOutFilePath() + optionManager.getOutFilePrefix() + targetTypes[i][0] + "s.txt";
 				try {
 					Path outFile = Paths.get(currentFilename);
 					if (!Files.exists(outFile)) {
@@ -81,7 +79,7 @@ class Main {
 
 				if (optionManager.getStatisticsType() != null) {
 					ValuesStatistics statistics = new ValuesStatistics(valuesArray, optionManager.getStatisticsType());
-					System.out.println("Statistics of " + targetTypes[i] + " values:");
+					System.out.println("Statistics of " + targetTypes[i][0] + " values:");
 					System.out.println("\tCount of values: " + statistics.getCount());
 					if (optionManager.getStatisticsType() == ValuesStatistics.Type.FULL) {
 						System.out.println("\tMin value: " + statistics.getMin());
