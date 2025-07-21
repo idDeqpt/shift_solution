@@ -80,12 +80,12 @@ class Main {
 				if (optionManager.getStatisticsType() != null) {
 					ValuesStatistics statistics = new ValuesStatistics(valuesArray, optionManager.getStatisticsType());
 					System.out.println("Statistics of " + targetTypes[i][0] + " values:");
-					System.out.println("\tCount of values: " + statistics.getCount());
+					System.out.println("\t|-Count of values: " + statistics.getCount());
 					if (optionManager.getStatisticsType() == ValuesStatistics.Type.FULL) {
-						System.out.println("\tMin value: " + statistics.getMin());
-						System.out.println("\tMax value: " + statistics.getMax());
-						System.out.println("\tAverage value: " + statistics.getAverage());
-						System.out.println("\tSum of values: " + statistics.getSum());
+						System.out.println("\t|-Min value: " + statistics.getMin());
+						System.out.println("\t|-Max value: " + statistics.getMax());
+						System.out.println("\t|-Average value: " + statistics.getAverage());
+						System.out.println("\t|-Sum of values: " + statistics.getSum());
 					}
 				}
 			}
